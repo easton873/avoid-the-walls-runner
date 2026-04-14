@@ -1,0 +1,1096 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Trail Runner</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: #0a0a0a;
+  color: #fff;
+  font-family: 'Courier New', monospace;
+  overflow: hidden;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Canvas wrapper ─────────────────────────────────────── */
+#game-wrapper {
+  position: absolute;
+  transform-origin: top left;
+}
+
+#gameCanvas {
+  display: block;
+}
+
+/* ── Menu screen ────────────────────────────────────────── */
+#menu-screen {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  background: #0a0a0a;
+  z-index: 10;
+}
+
+#menu-screen h1 {
+  font-size: 52px;
+  letter-spacing: 8px;
+  text-transform: uppercase;
+  background: linear-gradient(135deg, #00ffff, #ff4444, #44ff44, #ffd700);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 10px;
+}
+
+.menu-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 18px;
+}
+
+.menu-row label { color: #aaa; letter-spacing: 1px; }
+
+.menu-row select {
+  background: #1a1a1a;
+  color: #fff;
+  border: 1px solid #444;
+  padding: 8px 14px;
+  font-size: 16px;
+  font-family: inherit;
+  border-radius: 4px;
+  cursor: pointer;
+  outline: none;
+}
+
+.menu-row select:focus { border-color: #00ffff; }
+
+#start-btn {
+  margin-top: 10px;
+  padding: 14px 48px;
+  font-size: 22px;
+  letter-spacing: 4px;
+  background: transparent;
+  color: #00ffff;
+  border: 2px solid #00ffff;
+  cursor: pointer;
+  font-family: inherit;
+  border-radius: 4px;
+  transition: background 0.15s, color 0.15s;
+}
+
+#start-btn:hover:not(:disabled) {
+  background: #00ffff;
+  color: #0a0a0a;
+}
+
+#start-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  border-color: #555;
+  color: #555;
+}
+
+#landscape-msg {
+  color: #f90;
+  font-size: 14px;
+  letter-spacing: 1px;
+  display: none;
+}
+
+/* ── Game over DOM overlay ───────────────────────────────── */
+#gameover-screen {
+  position: fixed;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  background: rgba(0,0,0,0.85);
+  z-index: 20;
+}
+
+#gameover-screen h2 {
+  font-size: 40px;
+  letter-spacing: 6px;
+}
+
+#gameover-scores {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 20px;
+}
+
+.score-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.score-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+#play-again-btn {
+  margin-top: 14px;
+  padding: 12px 40px;
+  font-size: 20px;
+  letter-spacing: 3px;
+  background: transparent;
+  color: #44ff44;
+  border: 2px solid #44ff44;
+  cursor: pointer;
+  font-family: inherit;
+  border-radius: 4px;
+  transition: background 0.15s, color 0.15s;
+}
+
+#play-again-btn:hover {
+  background: #44ff44;
+  color: #0a0a0a;
+}
+
+/* ── Orientation overlay ────────────────────────────────── */
+#orientation-overlay {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  color: #fff;
+  font-size: 22px;
+  z-index: 100;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 30px;
+  gap: 20px;
+  letter-spacing: 1px;
+}
+
+#orientation-overlay .rotate-icon {
+  font-size: 60px;
+}
+
+/* ── Mobile controls ────────────────────────────────────── */
+#mobile-controls {
+  display: none;
+  position: fixed;
+  left: env(safe-area-inset-left, 20px);
+  bottom: env(safe-area-inset-bottom, 30px);
+  z-index: 50;
+}
+
+/* left offset from edge */
+#mobile-controls { left: 20px; bottom: 30px; }
+
+#dpad {
+  display: grid;
+  grid-template-columns: 64px 64px 64px;
+  grid-template-rows: 64px 64px 64px;
+  gap: 4px;
+}
+
+.dpad-btn {
+  width: 64px;
+  height: 64px;
+  background: rgba(255,255,255,0.12);
+  border: 2px solid rgba(255,255,255,0.3);
+  border-radius: 10px;
+  color: #fff;
+  font-size: 24px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  transition: background 0.08s;
+}
+
+.dpad-btn:active, .dpad-btn.pressed {
+  background: rgba(0,255,255,0.35);
+}
+
+#dpad-center { visibility: hidden; }
+
+#mobile-boost {
+  display: none;
+  position: fixed;
+  right: 20px;
+  bottom: 30px;
+  z-index: 50;
+}
+
+#btn-boost {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  background: rgba(255, 200, 0, 0.15);
+  border: 3px solid #ffd700;
+  color: #ffd700;
+  font-size: 13px;
+  letter-spacing: 1px;
+  font-family: inherit;
+  font-weight: bold;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  transition: background 0.08s;
+}
+
+#btn-boost:active, #btn-boost.pressed {
+  background: rgba(255, 200, 0, 0.45);
+}
+
+#btn-boost.used {
+  border-color: #555;
+  color: #555;
+  background: rgba(80,80,80,0.1);
+}
+</style>
+</head>
+<body>
+
+<!-- ── Menu ──────────────────────────────────────────── -->
+<div id="menu-screen">
+  <h1>Trail Runner</h1>
+  <div class="menu-row">
+    <label for="num-ai">AI Players</label>
+    <select id="num-ai">
+      <option value="1">1</option>
+      <option value="2">2</option>
+      <option value="3" selected>3</option>
+    </select>
+  </div>
+  <div class="menu-row">
+    <label for="game-mode">Mode</label>
+    <select id="game-mode">
+      <option value="best1">Best of 1</option>
+      <option value="best3" selected>Best of 3</option>
+      <option value="endless">Endless</option>
+    </select>
+  </div>
+  <button id="start-btn">START</button>
+  <p id="landscape-msg">Rotate device to landscape to play</p>
+</div>
+
+<!-- ── Game canvas wrapper ──────────────────────────── -->
+<div id="game-wrapper" style="display:none;">
+  <canvas id="gameCanvas" width="800" height="600"></canvas>
+</div>
+
+<!-- ── Game Over screen ──────────────────────────────── -->
+<div id="gameover-screen">
+  <h2 id="gameover-title">GAME OVER</h2>
+  <div id="gameover-scores"></div>
+  <button id="play-again-btn">PLAY AGAIN</button>
+</div>
+
+<!-- ── Orientation overlay ──────────────────────────── -->
+<div id="orientation-overlay">
+  <div class="rotate-icon">⟳</div>
+  <div>Please rotate your device<br>to landscape mode to play</div>
+</div>
+
+<!-- ── Mobile D-pad ─────────────────────────────────── -->
+<div id="mobile-controls">
+  <div id="dpad">
+    <div></div>
+    <button class="dpad-btn" id="btn-up">▲</button>
+    <div></div>
+    <button class="dpad-btn" id="btn-left">◀</button>
+    <div id="dpad-center"></div>
+    <button class="dpad-btn" id="btn-right">▶</button>
+    <div></div>
+    <button class="dpad-btn" id="btn-down">▼</button>
+    <div></div>
+  </div>
+</div>
+
+<!-- ── Mobile Boost ─────────────────────────────────── -->
+<div id="mobile-boost">
+  <button id="btn-boost">BOOST</button>
+</div>
+
+<script>
+'use strict';
+
+// ═══════════════════════════════════════════════════════
+// SECTION 1 — Constants & Configuration
+// ═══════════════════════════════════════════════════════
+
+const CFG = {
+  W: 800,
+  H: 600,
+  CELL: 4,
+  COLS: 200,   // W / CELL
+  ROWS: 150,   // H / CELL
+
+  SPEED: 120,          // px/s
+  BOOST_MULT: 2.2,
+  BOOST_MS: 1500,
+
+  TRAIL_W: 4,
+  HEAD_R: 5,           // head hitbox half-size in px
+
+  COLORS: ['#00ffff', '#ff4444', '#44ff44', '#ffd700'],
+  NAMES: ['You', 'CPU 1', 'CPU 2', 'CPU 3'],
+
+  AI_INTERVAL: 120,    // ms between AI decisions
+  AI_LOOK: 8,          // cells lookahead
+  AI_FLOOD_CAP: 300,   // max BFS cells
+
+  ROUND_DELAY: 2000,   // ms before showing round-end overlay
+  BORDER: 2,           // border wall cells
+};
+
+// ═══════════════════════════════════════════════════════
+// SECTION 2 — Grid Utilities
+// ═══════════════════════════════════════════════════════
+
+// Flat Uint8Array: 0=empty, 1-4=player+1, 255=wall
+const trailGrid = new Uint8Array(CFG.COLS * CFG.ROWS);
+
+function gi(gx, gy) { return gy * CFG.COLS + gx; }
+function w2g(wx, wy) {
+  return { gx: Math.floor(wx / CFG.CELL), gy: Math.floor(wy / CFG.CELL) };
+}
+
+function seedBorders() {
+  const b = CFG.BORDER;
+  for (let x = 0; x < CFG.COLS; x++) {
+    for (let i = 0; i < b; i++) {
+      trailGrid[gi(x, i)] = 255;
+      trailGrid[gi(x, CFG.ROWS - 1 - i)] = 255;
+    }
+  }
+  for (let y = 0; y < CFG.ROWS; y++) {
+    for (let i = 0; i < b; i++) {
+      trailGrid[gi(i, y)] = 255;
+      trailGrid[gi(CFG.COLS - 1 - i, y)] = 255;
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// SECTION 3 — Player & Game State
+// ═══════════════════════════════════════════════════════
+
+const DIR_VEC = {
+  up:    { x:  0, y: -1 },
+  down:  { x:  0, y:  1 },
+  left:  { x: -1, y:  0 },
+  right: { x:  1, y:  0 },
+};
+const OPPOSITE = { up:'down', down:'up', left:'right', right:'left' };
+
+const START_CFG = [
+  { x: 200, y: 300, dir: 'right' },
+  { x: 600, y: 300, dir: 'left'  },
+  { x: 400, y: 150, dir: 'down'  },
+  { x: 400, y: 450, dir: 'up'    },
+];
+
+function makePlayer(idx, isHuman, cfg) {
+  return {
+    idx, isHuman,
+    x: cfg.x, y: cfg.y,
+    prevX: cfg.x, prevY: cfg.y,
+    dir: cfg.dir, pendingDir: null,
+    alive: true,
+    boostAvail: true, boosting: false, boostEnd: 0,
+    color: CFG.COLORS[idx],
+    name: CFG.NAMES[idx],
+    wins: 0,
+    aiNextDecision: 0,
+    aiDir: cfg.dir,
+  };
+}
+
+const gs = {           // game state
+  phase: 'menu',       // 'menu'|'playing'|'roundEnd'|'gameOver'
+  mode: 'best3',
+  numAI: 3,
+  players: [],
+  round: 0,
+  wins: [0, 0, 0, 0],
+  roundWinner: -1,     // player idx, or -1 for draw
+  showOverlay: false,
+  overlayTimer: 0,
+  lastTs: 0,
+  orientationBlocked: false,
+  rafId: null,
+};
+
+// ═══════════════════════════════════════════════════════
+// SECTION 4 — Canvas Setup
+// ═══════════════════════════════════════════════════════
+
+const canvas    = document.getElementById('gameCanvas');
+const ctx       = canvas.getContext('2d');
+
+// Offscreen trail canvas — painted once per cell, never cleared
+const trailCanvas = document.createElement('canvas');
+trailCanvas.width  = CFG.W;
+trailCanvas.height = CFG.H;
+const tCtx = trailCanvas.getContext('2d');
+
+function fitCanvas() {
+  const sx = window.innerWidth  / CFG.W;
+  const sy = window.innerHeight / CFG.H;
+  const s  = Math.min(sx, sy);
+  const wrap = document.getElementById('game-wrapper');
+  wrap.style.width  = CFG.W + 'px';
+  wrap.style.height = CFG.H + 'px';
+  wrap.style.transform = `scale(${s})`;
+  wrap.style.left = ((window.innerWidth  - CFG.W * s) / 2) + 'px';
+  wrap.style.top  = ((window.innerHeight - CFG.H * s) / 2) + 'px';
+}
+
+// ═══════════════════════════════════════════════════════
+// SECTION 5 — Trail Painting & Collision
+// ═══════════════════════════════════════════════════════
+
+function paintCell(gx, gy, playerIdx) {
+  if (gx < 0 || gx >= CFG.COLS || gy < 0 || gy >= CFG.ROWS) return;
+  const idx = gi(gx, gy);
+  if (trailGrid[idx] !== 0) return;
+  trailGrid[idx] = playerIdx + 1;
+  // Draw immediately to persistent trail canvas
+  tCtx.fillStyle = CFG.COLORS[playerIdx];
+  tCtx.fillRect(gx * CFG.CELL, gy * CFG.CELL, CFG.CELL, CFG.CELL);
+}
+
+function paintTrailAt(wx, wy, playerIdx) {
+  const r = Math.max(1, Math.round(CFG.TRAIL_W / CFG.CELL / 2));
+  const { gx, gy } = w2g(wx, wy);
+  for (let dy = -r; dy <= r; dy++) {
+    for (let dx = -r; dx <= r; dx++) {
+      paintCell(gx + dx, gy + dy, playerIdx);
+    }
+  }
+}
+
+function checkCollision(p) {
+  const hr = Math.ceil(CFG.HEAD_R / CFG.CELL);
+  const { gx, gy } = w2g(p.x, p.y);
+  for (let dy = -hr; dy <= hr; dy++) {
+    for (let dx = -hr; dx <= hr; dx++) {
+      const nx = gx + dx, ny = gy + dy;
+      if (nx < 0 || nx >= CFG.COLS || ny < 0 || ny >= CFG.ROWS) return true;
+      if (trailGrid[gi(nx, ny)] !== 0) return true;
+    }
+  }
+  return false;
+}
+
+// ═══════════════════════════════════════════════════════
+// SECTION 6 — Boost
+// ═══════════════════════════════════════════════════════
+
+function activateBoost(p, now) {
+  if (!p.boostAvail || !p.alive) return;
+  p.boostAvail = false;
+  p.boosting   = true;
+  p.boostEnd   = now + CFG.BOOST_MS;
+  updateBoostButton();
+}
+
+// ═══════════════════════════════════════════════════════
+// SECTION 7 — AI Logic
+// ═══════════════════════════════════════════════════════
+
+function countSpace(startGX, startGY, cap) {
+  const visited = new Uint8Array(CFG.COLS * CFG.ROWS);
+  const queue = [gi(startGX, startGY)];
+  visited[queue[0]] = 1;
+  let count = 0;
+  let head = 0;
+  while (head < queue.length && count < cap) {
+    const idx = queue[head++];
+    count++;
+    const x = idx % CFG.COLS;
+    const y = (idx / CFG.COLS) | 0;
+    const neighbors = [
+      x+1 < CFG.COLS  ? gi(x+1, y) : -1,
+      x-1 >= 0        ? gi(x-1, y) : -1,
+      y+1 < CFG.ROWS  ? gi(x, y+1) : -1,
+      y-1 >= 0        ? gi(x, y-1) : -1,
+    ];
+    for (const nidx of neighbors) {
+      if (nidx < 0) continue;
+      if (!visited[nidx] && trailGrid[nidx] === 0) {
+        visited[nidx] = 1;
+        queue.push(nidx);
+      }
+    }
+  }
+  return count;
+}
+
+function lookaheadClear(gx, gy, dir, steps) {
+  const v = DIR_VEC[dir];
+  for (let i = 1; i <= steps; i++) {
+    const nx = gx + v.x * i;
+    const ny = gy + v.y * i;
+    if (nx < 0 || nx >= CFG.COLS || ny < 0 || ny >= CFG.ROWS) return false;
+    if (trailGrid[gi(nx, ny)] !== 0) return false;
+  }
+  return true;
+}
+
+function updateAI(p, now) {
+  if (now < p.aiNextDecision) return;
+  p.aiNextDecision = now + CFG.AI_INTERVAL;
+
+  const { gx, gy } = w2g(p.x, p.y);
+  const dirs = Object.keys(DIR_VEC).filter(d => d !== OPPOSITE[p.dir]);
+
+  let bestDir = p.dir;
+  let bestSpace = -1;
+
+  for (const d of dirs) {
+    const v = DIR_VEC[d];
+    const nx = gx + v.x;
+    const ny = gy + v.y;
+    if (nx < 0 || nx >= CFG.COLS || ny < 0 || ny >= CFG.ROWS) continue;
+    if (trailGrid[gi(nx, ny)] !== 0) continue;
+
+    // Prefer directions with clear lookahead
+    const clear = lookaheadClear(gx, gy, d, CFG.AI_LOOK);
+    const space = countSpace(nx, ny, CFG.AI_FLOOD_CAP);
+    const score = space + (clear ? 50 : 0);
+
+    if (score > bestSpace) {
+      bestSpace = score;
+      bestDir = d;
+    }
+  }
+
+  p.pendingDir = bestDir;
+
+  // Boost if cornered
+  if (bestSpace < 50 && p.boostAvail) {
+    activateBoost(p, now);
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// SECTION 8 — Game Loop
+// ═══════════════════════════════════════════════════════
+
+function applyDir(p) {
+  if (p.pendingDir && p.pendingDir !== OPPOSITE[p.dir]) {
+    p.dir = p.pendingDir;
+  }
+  p.pendingDir = null;
+}
+
+function update(dt, now) {
+  const players = gs.players;
+
+  for (const p of players) {
+    if (!p.alive) continue;
+    if (!p.isHuman) updateAI(p, now);
+    applyDir(p);
+
+    const spd = (p.boosting && now < p.boostEnd)
+      ? CFG.SPEED * CFG.BOOST_MULT
+      : CFG.SPEED;
+    if (p.boosting && now >= p.boostEnd) p.boosting = false;
+
+    const v = DIR_VEC[p.dir];
+    p.x += v.x * spd * dt;
+    p.y += v.y * spd * dt;
+
+    // Collision check at new position BEFORE we paint old position
+    if (checkCollision(p)) {
+      p.alive = false;
+      // Paint a death flash — mark their previous pos as wall to fill gap
+      paintTrailAt(p.prevX, p.prevY, p.idx);
+      continue;
+    }
+
+    // Paint PREVIOUS position so head is always clear
+    paintTrailAt(p.prevX, p.prevY, p.idx);
+    p.prevX = p.x;
+    p.prevY = p.y;
+  }
+
+  checkRoundEnd(now);
+}
+
+function checkRoundEnd(now) {
+  if (gs.phase !== 'playing') return;
+  const alive = gs.players.filter(p => p.alive);
+  if (alive.length > 1) return;
+
+  gs.phase = 'roundEnd';
+  gs.showOverlay = false;
+
+  const winner = alive[0] ?? null;
+  gs.roundWinner = winner ? winner.idx : -1;
+  if (winner) gs.wins[winner.idx]++;
+
+  gs.overlayTimer = now + CFG.ROUND_DELAY;
+}
+
+function gameLoop(ts) {
+  if (gs.phase !== 'playing' && gs.phase !== 'roundEnd') return;
+
+  let dt = (ts - gs.lastTs) / 1000;
+  gs.lastTs = ts;
+  dt = Math.min(dt, 0.05);
+
+  if (gs.phase === 'playing') {
+    if (!gs.orientationBlocked) {
+      update(dt, ts);
+    }
+  }
+
+  if (gs.phase === 'roundEnd' && !gs.showOverlay && ts >= gs.overlayTimer) {
+    gs.showOverlay = true;
+  }
+
+  render(ts);
+  gs.rafId = requestAnimationFrame(gameLoop);
+}
+
+// ═══════════════════════════════════════════════════════
+// SECTION 9 — Rendering
+// ═══════════════════════════════════════════════════════
+
+function render(ts) {
+  // Background
+  ctx.fillStyle = '#0a0a0a';
+  ctx.fillRect(0, 0, CFG.W, CFG.H);
+
+  // Blit persistent trail canvas
+  ctx.drawImage(trailCanvas, 0, 0);
+
+  // Border (visual)
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = CFG.BORDER * CFG.CELL;
+  ctx.strokeRect(
+    CFG.BORDER * CFG.CELL / 2,
+    CFG.BORDER * CFG.CELL / 2,
+    CFG.W - CFG.BORDER * CFG.CELL,
+    CFG.H - CFG.BORDER * CFG.CELL
+  );
+
+  // Player heads
+  for (const p of gs.players) {
+    if (!p.alive) continue;
+    drawHead(p, ts);
+  }
+
+  // HUD
+  drawHUD();
+
+  // Round end overlay
+  if (gs.phase === 'roundEnd' && gs.showOverlay) {
+    drawRoundOverlay();
+  }
+}
+
+function drawHead(p, ts) {
+  const s = CFG.HEAD_R * 2;
+
+  // Boost glow
+  if (p.boosting) {
+    const pulse = 0.5 + 0.4 * Math.sin(ts / 80);
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, s + 6, 0, Math.PI * 2);
+    ctx.strokeStyle = p.color;
+    ctx.lineWidth = 3;
+    ctx.globalAlpha = pulse;
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+
+  // Head square
+  ctx.fillStyle = p.color;
+  ctx.fillRect(p.x - CFG.HEAD_R, p.y - CFG.HEAD_R, s, s);
+
+  // Direction nub
+  ctx.fillStyle = '#000';
+  const v = DIR_VEC[p.dir];
+  ctx.fillRect(
+    p.x + v.x * (CFG.HEAD_R - 2) - 2,
+    p.y + v.y * (CFG.HEAD_R - 2) - 2,
+    4, 4
+  );
+}
+
+function drawHUD() {
+  const pad = 12;
+  const dotSize = 12;
+  const lineH = 22;
+  const count = gs.players.length;
+
+  ctx.font = 'bold 14px Courier New';
+  ctx.textBaseline = 'middle';
+
+  for (let i = 0; i < count; i++) {
+    const p = gs.players[i];
+    const y = pad + i * lineH + lineH / 2;
+
+    // Color dot
+    ctx.fillStyle = p.alive ? p.color : '#444';
+    ctx.fillRect(pad, y - dotSize / 2, dotSize, dotSize);
+
+    // Name + wins
+    ctx.fillStyle = p.alive ? '#fff' : '#555';
+    ctx.fillText(`${p.name}  ${gs.wins[p.idx]}`, pad + dotSize + 8, y);
+
+    // Boost pip (for human)
+    if (p.isHuman) {
+      const bx = pad + dotSize + 8 + 80;
+      if (p.boostAvail) {
+        ctx.fillStyle = '#ffd700';
+        ctx.fillRect(bx, y - 5, 18, 10);
+      } else if (p.boosting) {
+        ctx.strokeStyle = '#ffd700';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(bx, y - 5, 18, 10);
+        // Flash
+        ctx.globalAlpha = 0.5 + 0.5 * Math.sin(Date.now() / 60);
+        ctx.fillStyle = '#ffd700';
+        ctx.fillRect(bx, y - 5, 18, 10);
+        ctx.globalAlpha = 1;
+      } else {
+        ctx.strokeStyle = '#555';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(bx, y - 5, 18, 10);
+      }
+    }
+  }
+
+  // Round indicator (top right)
+  ctx.textBaseline = 'top';
+  ctx.fillStyle = '#666';
+  ctx.font = '13px Courier New';
+  const modeLabel = gs.mode === 'best1' ? 'Best of 1'
+                  : gs.mode === 'best3' ? 'Best of 3'
+                  : 'Endless';
+  ctx.textAlign = 'right';
+  ctx.fillText(`${modeLabel}  Round ${gs.round}`, CFG.W - 12, 12);
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+}
+
+function drawRoundOverlay() {
+  // Semi-transparent background
+  ctx.fillStyle = 'rgba(0,0,0,0.65)';
+  ctx.fillRect(0, 0, CFG.W, CFG.H);
+
+  const cx = CFG.W / 2;
+  const cy = CFG.H / 2;
+
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  let winText, winColor;
+  if (gs.roundWinner === -1) {
+    winText = 'DRAW';
+    winColor = '#fff';
+  } else {
+    const wp = gs.players[gs.roundWinner];
+    winText = (wp.isHuman ? 'You Win' : wp.name + ' Wins') + '!';
+    winColor = wp.color;
+  }
+
+  ctx.font = 'bold 52px Courier New';
+  ctx.fillStyle = winColor;
+  ctx.fillText(winText, cx, cy - 28);
+
+  // Score summary
+  ctx.font = '20px Courier New';
+  ctx.fillStyle = '#ccc';
+  const scoreStr = gs.players
+    .map(p => `${p.name} ${gs.wins[p.idx]}`)
+    .join('   ');
+  ctx.fillText(scoreStr, cx, cy + 22);
+
+  ctx.font = '16px Courier New';
+  ctx.fillStyle = '#888';
+  ctx.fillText('Click or tap to continue', cx, cy + 62);
+
+  ctx.textAlign = 'left';
+}
+
+// ═══════════════════════════════════════════════════════
+// SECTION 10 — Round / Game Flow
+// ═══════════════════════════════════════════════════════
+
+function requiredWins() {
+  if (gs.mode === 'best1') return 1;
+  if (gs.mode === 'best3') return 2;
+  return Infinity;
+}
+
+function isSeriesOver() {
+  if (gs.mode === 'endless') return false;
+  return gs.wins.some(w => w >= requiredWins());
+}
+
+function startRound() {
+  gs.round++;
+  trailGrid.fill(0);
+  tCtx.clearRect(0, 0, CFG.W, CFG.H);
+  seedBorders();
+
+  // Draw borders onto trail canvas
+  tCtx.fillStyle = '#fff';
+  const bpx = CFG.BORDER * CFG.CELL;
+  tCtx.fillRect(0, 0, CFG.W, bpx);                     // top
+  tCtx.fillRect(0, CFG.H - bpx, CFG.W, bpx);           // bottom
+  tCtx.fillRect(0, 0, bpx, CFG.H);                     // left
+  tCtx.fillRect(CFG.W - bpx, 0, bpx, CFG.H);           // right
+
+  const total = 1 + gs.numAI;
+  // Preserve win counts
+  const prevWins = gs.players.length > 0
+    ? gs.players.map(p => p.wins)
+    : Array(4).fill(0);
+
+  gs.players = START_CFG.slice(0, total).map((cfg, i) => {
+    const p = makePlayer(i, i === 0, cfg);
+    p.wins = gs.wins[i];
+    return p;
+  });
+
+  gs.phase = 'playing';
+  gs.showOverlay = false;
+  gs.roundWinner = -1;
+  gs.lastTs = performance.now();
+
+  updateBoostButton();
+
+  if (gs.rafId) cancelAnimationFrame(gs.rafId);
+  gs.rafId = requestAnimationFrame(gameLoop);
+}
+
+function startGame() {
+  gs.numAI = parseInt(document.getElementById('num-ai').value);
+  gs.mode  = document.getElementById('game-mode').value;
+  gs.round = 0;
+  gs.wins  = [0, 0, 0, 0];
+
+  document.getElementById('menu-screen').style.display = 'none';
+  document.getElementById('game-wrapper').style.display = 'block';
+  showMobileControls(true);
+
+  startRound();
+}
+
+function continueAfterRound() {
+  if (gs.phase !== 'roundEnd' || !gs.showOverlay) return;
+
+  if (isSeriesOver()) {
+    // Game over
+    gs.phase = 'gameOver';
+    if (gs.rafId) { cancelAnimationFrame(gs.rafId); gs.rafId = null; }
+    showGameOver();
+  } else {
+    startRound();
+  }
+}
+
+function showGameOver() {
+  document.getElementById('game-wrapper').style.display = 'none';
+  showMobileControls(false);
+
+  // Determine overall winner
+  const maxWins = Math.max(...gs.wins.slice(0, 1 + gs.numAI));
+  const winnerIdx = gs.wins.findIndex(w => w === maxWins);
+  const wp = gs.players[winnerIdx];
+
+  const title = document.getElementById('gameover-title');
+  title.textContent = (wp.isHuman ? 'You Win!' : wp.name + ' Wins!');
+  title.style.color = wp.color;
+
+  const scoresEl = document.getElementById('gameover-scores');
+  scoresEl.innerHTML = '';
+  for (let i = 0; i <= gs.numAI; i++) {
+    const p = gs.players[i];
+    const row = document.createElement('div');
+    row.className = 'score-row';
+    row.innerHTML = `
+      <div class="score-dot" style="background:${p.color}"></div>
+      <span style="color:${p.color}">${p.name}</span>
+      <span style="color:#ccc">— ${gs.wins[i]} win${gs.wins[i] !== 1 ? 's' : ''}</span>
+    `;
+    scoresEl.appendChild(row);
+  }
+
+  const goScreen = document.getElementById('gameover-screen');
+  goScreen.style.display = 'flex';
+}
+
+function backToMenu() {
+  document.getElementById('gameover-screen').style.display = 'none';
+  document.getElementById('menu-screen').style.display = 'flex';
+  gs.phase = 'menu';
+}
+
+// ═══════════════════════════════════════════════════════
+// SECTION 11 — Input Handling
+// ═══════════════════════════════════════════════════════
+
+document.addEventListener('keydown', e => {
+  if (gs.phase !== 'playing') {
+    if ((e.code === 'Enter' || e.code === 'Space') && gs.phase === 'roundEnd' && gs.showOverlay) {
+      e.preventDefault();
+      continueAfterRound();
+    }
+    return;
+  }
+
+  const p = gs.players[0];
+  if (!p) return;
+
+  switch (e.code) {
+    case 'KeyW': case 'ArrowUp':    p.pendingDir = 'up';    e.preventDefault(); break;
+    case 'KeyS': case 'ArrowDown':  p.pendingDir = 'down';  e.preventDefault(); break;
+    case 'KeyA': case 'ArrowLeft':  p.pendingDir = 'left';  e.preventDefault(); break;
+    case 'KeyD': case 'ArrowRight': p.pendingDir = 'right'; e.preventDefault(); break;
+    case 'Space':
+      e.preventDefault();
+      activateBoost(p, performance.now());
+      break;
+  }
+});
+
+// Click/tap canvas to continue after round
+canvas.addEventListener('click', continueAfterRound);
+canvas.addEventListener('touchend', e => { e.preventDefault(); continueAfterRound(); }, { passive: false });
+
+// Mobile D-pad
+function mobileDir(dir) {
+  if (gs.phase !== 'playing') return;
+  const p = gs.players[0];
+  if (p) p.pendingDir = dir;
+}
+
+function attachDpadBtn(id, dir) {
+  const btn = document.getElementById(id);
+  btn.addEventListener('touchstart', e => { e.preventDefault(); mobileDir(dir); btn.classList.add('pressed'); }, { passive: false });
+  btn.addEventListener('touchend',   e => { e.preventDefault(); btn.classList.remove('pressed'); }, { passive: false });
+  // Also support mouse for testing in devtools
+  btn.addEventListener('mousedown', () => mobileDir(dir));
+}
+
+attachDpadBtn('btn-up',    'up');
+attachDpadBtn('btn-down',  'down');
+attachDpadBtn('btn-left',  'left');
+attachDpadBtn('btn-right', 'right');
+
+const boostBtn = document.getElementById('btn-boost');
+boostBtn.addEventListener('touchstart', e => {
+  e.preventDefault();
+  if (gs.phase !== 'playing') return;
+  const p = gs.players[0];
+  if (p) activateBoost(p, performance.now());
+  boostBtn.classList.add('pressed');
+}, { passive: false });
+boostBtn.addEventListener('touchend', e => { e.preventDefault(); boostBtn.classList.remove('pressed'); }, { passive: false });
+boostBtn.addEventListener('mousedown', () => {
+  if (gs.phase !== 'playing') return;
+  const p = gs.players[0];
+  if (p) activateBoost(p, performance.now());
+});
+
+function updateBoostButton() {
+  const p = gs.players[0];
+  if (!p) return;
+  if (p.boostAvail) {
+    boostBtn.classList.remove('used');
+  } else {
+    boostBtn.classList.add('used');
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// SECTION 12 — Mobile Detection & Orientation
+// ═══════════════════════════════════════════════════════
+
+const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+  || window.matchMedia('(pointer: coarse)').matches
+  || ('ontouchstart' in window);
+
+function showMobileControls(show) {
+  if (!isMobile) return;
+  const vis = show ? 'flex' : 'none';
+  document.getElementById('mobile-controls').style.display = show ? 'block' : 'none';
+  document.getElementById('mobile-boost').style.display    = show ? 'flex'  : 'none';
+}
+
+function checkOrientation() {
+  if (!isMobile) return;
+  const isLandscape = window.innerWidth > window.innerHeight;
+  const overlay = document.getElementById('orientation-overlay');
+  const startBtn = document.getElementById('start-btn');
+  const lMsg     = document.getElementById('landscape-msg');
+
+  if (!isLandscape) {
+    overlay.style.display = 'flex';
+    startBtn.disabled = true;
+    lMsg.style.display = 'block';
+    if (gs.phase === 'playing') {
+      gs.orientationBlocked = true;
+    }
+  } else {
+    overlay.style.display = 'none';
+    startBtn.disabled = false;
+    lMsg.style.display = 'none';
+    if (gs.orientationBlocked) {
+      gs.orientationBlocked = false;
+      gs.lastTs = performance.now();
+    }
+  }
+}
+
+window.addEventListener('resize', () => { fitCanvas(); checkOrientation(); });
+window.addEventListener('orientationchange', checkOrientation);
+
+// ═══════════════════════════════════════════════════════
+// SECTION 13 — Menu Wiring & Boot
+// ═══════════════════════════════════════════════════════
+
+document.getElementById('start-btn').addEventListener('click', () => {
+  if (isMobile) {
+    const isLandscape = window.innerWidth > window.innerHeight;
+    if (!isLandscape) return;
+  }
+  startGame();
+});
+
+document.getElementById('play-again-btn').addEventListener('click', backToMenu);
+
+// Boot
+fitCanvas();
+checkOrientation();
+
+</script>
+</body>
+</html>
