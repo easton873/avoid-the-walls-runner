@@ -11,7 +11,7 @@ export class UI {
 
     this._bindMenu();
     this._checkPortrait();
-    if (isMobile()) this._watchOrientation();
+    this._watchOrientation();
   }
 
   // ── Menu ──────────────────────────────────────────────────────────
@@ -145,7 +145,7 @@ export class UI {
 
   _checkPortrait() {
     const overlay = document.getElementById('portrait-overlay');
-    if (isMobile() && isPortrait()) {
+    if (isPortrait()) {
       overlay.classList.add('active');
     } else {
       overlay.classList.remove('active');
