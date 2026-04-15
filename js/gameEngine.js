@@ -88,6 +88,8 @@ export function createGame({ numCPU, gameMode }) {
       color: PLAYER_COLORS[i],
       isHuman: i === 0,
       score: 0,
+      directionStepsCount: 4,
+      minStepsBeforeTurn: randomMinSteps(),
     });
   }
 
@@ -173,11 +175,17 @@ function movePlayer(player, occupied, gridWidth, gridHeight) {
     newTrail.push({ x, y });
   }
 
+  const dirChanged = dir !== player.direction;
+  const directionStepsCount = dirChanged ? 1 : (player.directionStepsCount ?? 4) + 1;
+  const minStepsBeforeTurn = dirChanged ? randomMinSteps() : player.minStepsBeforeTurn;
+
   return {
     ...player,
     x,
     y,
     direction: dir,
+    directionStepsCount,
+    minStepsBeforeTurn,
     alive,
     trail: newTrail,
     boostTicksLeft: Math.max(0, player.boostTicksLeft - 1),
@@ -246,6 +254,14 @@ export function checkCollisions(state) {
 }
 
 // ---------------------------------------------------------------------------
+// randomMinSteps — pick a random straight-line commitment length for a CPU
+// ---------------------------------------------------------------------------
+
+function randomMinSteps() {
+  return Math.floor(Math.random() * 4) + 1; // 1, 2, 3, or 4
+}
+
+// ---------------------------------------------------------------------------
 // getAIInput — BFS flood fill to choose best direction for a CPU player
 // ---------------------------------------------------------------------------
 
@@ -257,17 +273,21 @@ export function getAIInput(state, playerId) {
     (d) => OPPOSITES[player.direction] !== d
   );
 
-  let bestDir = player.direction;
+  // Require at least 2 steps in the current direction before allowing a turn.
+  // Turns are still allowed as an emergency fallback if going straight is blocked.
+  const canTurn = player.directionStepsCount >= (player.minStepsBeforeTurn ?? 1);
+  const primaryDirs = canTurn ? dirs : dirs.filter((d) => d === player.direction);
+  const emergencyDirs = canTurn ? [] : dirs.filter((d) => d !== player.direction);
+
+  let bestDir = null;
   let bestScore = -1;
 
-  for (const d of dirs) {
+  for (const d of primaryDirs) {
     const { dx, dy } = DIR_DELTA[d];
     const nx = player.x + dx;
     const ny = player.y + dy;
-
     if (isOutOfBounds(nx, ny, state.gridWidth, state.gridHeight)) continue;
     if (state.occupiedCells.has(cellKey(nx, ny))) continue;
-
     const openCells = floodFill(nx, ny, state.occupiedCells, state.gridWidth, state.gridHeight, 200);
     if (openCells > bestScore) {
       bestScore = openCells;
@@ -275,7 +295,23 @@ export function getAIInput(state, playerId) {
     }
   }
 
-  return bestDir;
+  // Straight is blocked — allow turns as emergency to avoid dying
+  if (bestDir === null) {
+    for (const d of emergencyDirs) {
+      const { dx, dy } = DIR_DELTA[d];
+      const nx = player.x + dx;
+      const ny = player.y + dy;
+      if (isOutOfBounds(nx, ny, state.gridWidth, state.gridHeight)) continue;
+      if (state.occupiedCells.has(cellKey(nx, ny))) continue;
+      const openCells = floodFill(nx, ny, state.occupiedCells, state.gridWidth, state.gridHeight, 200);
+      if (openCells > bestScore) {
+        bestScore = openCells;
+        bestDir = d;
+      }
+    }
+  }
+
+  return bestDir ?? player.direction;
 }
 
 function floodFill(startX, startY, occupied, w, h, maxCells) {
