@@ -9,7 +9,11 @@ const KEY_MAP = {
 };
 
 export function isMobile() {
-  return window.matchMedia('(pointer: coarse)').matches;
+  return (
+    window.matchMedia('(pointer: coarse)').matches ||
+    'ontouchstart' in window ||
+    navigator.maxTouchPoints > 0
+  );
 }
 
 export function isPortrait() {
