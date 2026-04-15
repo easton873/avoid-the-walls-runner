@@ -3,10 +3,13 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "test": "node --experimental-vm-modules node_modules/.bin/jest"
+    "test": "node --experimental-vm-modules node_modules/.bin/jest",
+    "build": "esbuild js/main.js --bundle --outfile=bundle.js",
+    "dev": "esbuild js/main.js --bundle --outfile=bundle.js --watch"
   },
   "devDependencies": {
     "@jest/globals": "^29.0.0",
+    "esbuild": "^0.24.0",
     "jest": "^29.0.0"
   },
   "jest": {

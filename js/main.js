@@ -49,6 +49,7 @@ function startGame({ gameMode, numCPU }) {
 
   gameState = createGame({ gameMode, numCPU });
   ui.showGame();
+  renderer._resize(); // canvas was 0x0 while menu screen was showing
 
   inputHandler = new InputHandler({
     onDirection: (dir) => {

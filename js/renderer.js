@@ -85,6 +85,16 @@ export class Renderer {
       }
     }
 
+    // Border
+    const borderW = Math.max(2, Math.round(3 * devicePixelRatio));
+    ctx.save();
+    ctx.strokeStyle = '#ff4757';
+    ctx.lineWidth = borderW;
+    ctx.shadowColor = '#ff4757';
+    ctx.shadowBlur = 12;
+    ctx.strokeRect(borderW / 2, borderW / 2, cw - borderW, ch - borderW);
+    ctx.restore();
+
     // HUD — round info top-left, scores top-right
     this._drawHUD(state, cw, ch);
   }

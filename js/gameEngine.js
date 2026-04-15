@@ -12,8 +12,8 @@ const PLAYER_NAMES = ['You', 'CPU 1', 'CPU 2', 'CPU 3'];
 const STARTING_POSITIONS = [
   { x: 15, y: 25, direction: 'right' },
   { x: 65, y: 25, direction: 'left' },
-  { x: 40, y: 10, direction: 'down' },
-  { x: 40, y: 40, direction: 'up' },
+  { x: 38, y: 10, direction: 'down' },
+  { x: 42, y: 40, direction: 'up' },
 ];
 
 const OPPOSITES = { up: 'down', down: 'up', left: 'right', right: 'left' };
