@@ -88,7 +88,7 @@ export function createGame({ numCPU, gameMode }) {
       color: PLAYER_COLORS[i],
       isHuman: i === 0,
       score: 0,
-      directionStepsCount: 2,
+      directionStepsCount: 3,
     });
   }
 
@@ -175,7 +175,7 @@ function movePlayer(player, occupied, gridWidth, gridHeight) {
   }
 
   const dirChanged = dir !== player.direction;
-  const directionStepsCount = dirChanged ? 1 : (player.directionStepsCount ?? 2) + 1;
+  const directionStepsCount = dirChanged ? 1 : (player.directionStepsCount ?? 3) + 1;
 
   return {
     ...player,
@@ -264,7 +264,7 @@ export function getAIInput(state, playerId) {
 
   // Require at least 2 steps in the current direction before allowing a turn.
   // Turns are still allowed as an emergency fallback if going straight is blocked.
-  const canTurn = (player.directionStepsCount ?? 2) >= 2;
+  const canTurn = (player.directionStepsCount ?? 3) >= 3;
   const primaryDirs = canTurn ? dirs : dirs.filter((d) => d === player.direction);
   const emergencyDirs = canTurn ? [] : dirs.filter((d) => d !== player.direction);
 
