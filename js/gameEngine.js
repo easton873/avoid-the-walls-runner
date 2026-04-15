@@ -88,7 +88,8 @@ export function createGame({ numCPU, gameMode }) {
       color: PLAYER_COLORS[i],
       isHuman: i === 0,
       score: 0,
-      directionStepsCount: 3,
+      directionStepsCount: 4,
+      minStepsBeforeTurn: randomMinSteps(),
     });
   }
 
@@ -175,7 +176,8 @@ function movePlayer(player, occupied, gridWidth, gridHeight) {
   }
 
   const dirChanged = dir !== player.direction;
-  const directionStepsCount = dirChanged ? 1 : (player.directionStepsCount ?? 3) + 1;
+  const directionStepsCount = dirChanged ? 1 : (player.directionStepsCount ?? 4) + 1;
+  const minStepsBeforeTurn = dirChanged ? randomMinSteps() : player.minStepsBeforeTurn;
 
   return {
     ...player,
@@ -183,6 +185,7 @@ function movePlayer(player, occupied, gridWidth, gridHeight) {
     y,
     direction: dir,
     directionStepsCount,
+    minStepsBeforeTurn,
     alive,
     trail: newTrail,
     boostTicksLeft: Math.max(0, player.boostTicksLeft - 1),
@@ -251,6 +254,14 @@ export function checkCollisions(state) {
 }
 
 // ---------------------------------------------------------------------------
+// randomMinSteps — pick a random straight-line commitment length for a CPU
+// ---------------------------------------------------------------------------
+
+function randomMinSteps() {
+  return Math.floor(Math.random() * 4) + 1; // 1, 2, 3, or 4
+}
+
+// ---------------------------------------------------------------------------
 // getAIInput — BFS flood fill to choose best direction for a CPU player
 // ---------------------------------------------------------------------------
 
@@ -264,7 +275,7 @@ export function getAIInput(state, playerId) {
 
   // Require at least 2 steps in the current direction before allowing a turn.
   // Turns are still allowed as an emergency fallback if going straight is blocked.
-  const canTurn = (player.directionStepsCount ?? 3) >= 3;
+  const canTurn = player.directionStepsCount >= (player.minStepsBeforeTurn ?? 1);
   const primaryDirs = canTurn ? dirs : dirs.filter((d) => d === player.direction);
   const emergencyDirs = canTurn ? [] : dirs.filter((d) => d !== player.direction);
 
