@@ -1,0 +1,304 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  background: #0a0a0f;
+  color: #e0e0e0;
+  font-family: 'Courier New', Courier, monospace;
+  overflow: hidden;
+  user-select: none;
+}
+
+/* ── Screens ───────────────────────────────────────────────────── */
+
+.screen {
+  display: none;
+  position: absolute;
+  inset: 0;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 20px;
+  background: #0a0a0f;
+  z-index: 10;
+}
+
+.screen.active {
+  display: flex;
+}
+
+/* ── Menu ───────────────────────────────────────────────────────── */
+
+#menu-screen h1 {
+  font-size: clamp(1.5rem, 5vw, 3rem);
+  color: #00f5ff;
+  text-shadow: 0 0 20px #00f5ff88;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+.menu-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.menu-section label {
+  font-size: 0.85rem;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.option-group {
+  display: flex;
+  gap: 10px;
+}
+
+.option-btn {
+  padding: 10px 22px;
+  border: 1px solid #333;
+  background: transparent;
+  color: #aaa;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.9rem;
+  border-radius: 4px;
+  transition: all 0.15s;
+}
+
+.option-btn:hover {
+  border-color: #00f5ff;
+  color: #00f5ff;
+}
+
+.option-btn.selected {
+  border-color: #00f5ff;
+  background: #00f5ff1a;
+  color: #00f5ff;
+  box-shadow: 0 0 10px #00f5ff44;
+}
+
+#start-btn {
+  margin-top: 10px;
+  padding: 14px 50px;
+  background: #00f5ff;
+  color: #0a0a0f;
+  border: none;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 1.1rem;
+  font-weight: bold;
+  cursor: pointer;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  transition: box-shadow 0.15s;
+}
+
+#start-btn:hover {
+  box-shadow: 0 0 20px #00f5ffaa;
+}
+
+/* ── Game canvas ────────────────────────────────────────────────── */
+
+#game-screen {
+  display: none;
+  position: absolute;
+  inset: 0;
+  background: #0a0a0f;
+}
+
+#game-screen.active {
+  display: block;
+}
+
+#game-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* ── Overlays ───────────────────────────────────────────────────── */
+
+.overlay {
+  display: none;
+  position: absolute;
+  inset: 0;
+  background: #0a0a0fcc;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 18px;
+  z-index: 20;
+}
+
+.overlay.active {
+  display: flex;
+}
+
+.overlay h2 {
+  font-size: clamp(1.2rem, 4vw, 2.5rem);
+  text-shadow: 0 0 15px currentColor;
+}
+
+.overlay p {
+  font-size: 0.9rem;
+  color: #888;
+}
+
+.overlay-btn {
+  padding: 12px 40px;
+  background: transparent;
+  border: 1px solid #00f5ff;
+  color: #00f5ff;
+  font-family: inherit;
+  font-size: 1rem;
+  cursor: pointer;
+  border-radius: 4px;
+  letter-spacing: 2px;
+  transition: all 0.15s;
+}
+
+.overlay-btn:hover {
+  background: #00f5ff1a;
+  box-shadow: 0 0 15px #00f5ff44;
+}
+
+.score-table {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 24px;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.score-table .score-name {
+  text-align: right;
+  color: #aaa;
+}
+
+.score-table .score-val {
+  text-align: left;
+  font-weight: bold;
+}
+
+/* ── Portrait warning ───────────────────────────────────────────── */
+
+#portrait-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: #0a0a0f;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 16px;
+  z-index: 100;
+  text-align: center;
+  padding: 20px;
+}
+
+#portrait-overlay.active {
+  display: flex;
+}
+
+#portrait-overlay p {
+  font-size: 1.1rem;
+  color: #00f5ff;
+}
+
+#portrait-overlay span {
+  font-size: 3rem;
+}
+
+/* ── Mobile controls ────────────────────────────────────────────── */
+
+#mobile-controls {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 180px;
+  z-index: 15;
+  pointer-events: none;
+}
+
+#mobile-controls.visible {
+  display: block;
+}
+
+#dpad {
+  position: absolute;
+  left: 40px;
+  bottom: 30px;
+  width: 130px;
+  height: 130px;
+  pointer-events: all;
+}
+
+.dpad-btn {
+  position: absolute;
+  width: 44px;
+  height: 44px;
+  background: #ffffff18;
+  border: 1px solid #ffffff33;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  cursor: pointer;
+  color: #fff;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.dpad-btn:active {
+  background: #00f5ff33;
+  border-color: #00f5ff;
+}
+
+/* Diamond layout: up top-center, left center-left, right center-right, down bottom-center */
+#dpad-up    { top:  0;   left: 43px; }
+#dpad-left  { top: 43px; left:  0;   }
+#dpad-right { top: 43px; left: 86px; }
+#dpad-down  { top: 86px; left: 43px; }
+
+#boost-mobile-btn {
+  position: absolute;
+  right: 50px;
+  bottom: 45px;
+  width: 80px;
+  height: 80px;
+  background: #ffa50222;
+  border: 2px solid #ffa502;
+  border-radius: 50%;
+  color: #ffa502;
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: bold;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  pointer-events: all;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+#boost-mobile-btn:active {
+  background: #ffa50244;
+}
+
+#boost-mobile-btn.used {
+  opacity: 0.3;
+  border-color: #555;
+  color: #555;
+}
