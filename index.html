@@ -492,12 +492,23 @@ function paintTrailAt(wx, wy, playerIdx) {
 
 function checkCollision(p) {
   const hr = Math.ceil(CFG.HEAD_R / CFG.CELL);
+  const r  = Math.max(1, Math.round(CFG.TRAIL_W / CFG.CELL / 2));
   const { gx, gy } = w2g(p.x, p.y);
+  const v = DIR_VEC[p.dir];
   for (let dy = -hr; dy <= hr; dy++) {
     for (let dx = -hr; dx <= hr; dx++) {
       const nx = gx + dx, ny = gy + dy;
       if (nx < 0 || nx >= CFG.COLS || ny < 0 || ny >= CFG.ROWS) return true;
-      if (trailGrid[gi(nx, ny)] !== 0) return true;
+      const cell = trailGrid[gi(nx, ny)];
+      if (cell === 0) continue;
+      // Skip own trail cells in the immediate wake (directly behind the head).
+      // This prevents the head from colliding with the trail it just painted,
+      // which happens because sub-cell movement keeps prevX in the same grid cell.
+      if (cell === p.idx + 1) {
+        const behind = -(dx * v.x + dy * v.y); // positive = behind the head
+        if (behind >= 0 && behind <= hr + r) continue;
+      }
+      return true;
     }
   }
   return false;
