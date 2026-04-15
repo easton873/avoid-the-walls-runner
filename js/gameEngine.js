@@ -88,6 +88,7 @@ export function createGame({ numCPU, gameMode }) {
       color: PLAYER_COLORS[i],
       isHuman: i === 0,
       score: 0,
+      directionStepsCount: 2,
     });
   }
 
@@ -173,11 +174,15 @@ function movePlayer(player, occupied, gridWidth, gridHeight) {
     newTrail.push({ x, y });
   }
 
+  const dirChanged = dir !== player.direction;
+  const directionStepsCount = dirChanged ? 1 : (player.directionStepsCount ?? 2) + 1;
+
   return {
     ...player,
     x,
     y,
     direction: dir,
+    directionStepsCount,
     alive,
     trail: newTrail,
     boostTicksLeft: Math.max(0, player.boostTicksLeft - 1),
@@ -257,17 +262,21 @@ export function getAIInput(state, playerId) {
     (d) => OPPOSITES[player.direction] !== d
   );
 
-  let bestDir = player.direction;
+  // Require at least 2 steps in the current direction before allowing a turn.
+  // Turns are still allowed as an emergency fallback if going straight is blocked.
+  const canTurn = (player.directionStepsCount ?? 2) >= 2;
+  const primaryDirs = canTurn ? dirs : dirs.filter((d) => d === player.direction);
+  const emergencyDirs = canTurn ? [] : dirs.filter((d) => d !== player.direction);
+
+  let bestDir = null;
   let bestScore = -1;
 
-  for (const d of dirs) {
+  for (const d of primaryDirs) {
     const { dx, dy } = DIR_DELTA[d];
     const nx = player.x + dx;
     const ny = player.y + dy;
-
     if (isOutOfBounds(nx, ny, state.gridWidth, state.gridHeight)) continue;
     if (state.occupiedCells.has(cellKey(nx, ny))) continue;
-
     const openCells = floodFill(nx, ny, state.occupiedCells, state.gridWidth, state.gridHeight, 200);
     if (openCells > bestScore) {
       bestScore = openCells;
@@ -275,7 +284,23 @@ export function getAIInput(state, playerId) {
     }
   }
 
-  return bestDir;
+  // Straight is blocked — allow turns as emergency to avoid dying
+  if (bestDir === null) {
+    for (const d of emergencyDirs) {
+      const { dx, dy } = DIR_DELTA[d];
+      const nx = player.x + dx;
+      const ny = player.y + dy;
+      if (isOutOfBounds(nx, ny, state.gridWidth, state.gridHeight)) continue;
+      if (state.occupiedCells.has(cellKey(nx, ny))) continue;
+      const openCells = floodFill(nx, ny, state.occupiedCells, state.gridWidth, state.gridHeight, 200);
+      if (openCells > bestScore) {
+        bestScore = openCells;
+        bestDir = d;
+      }
+    }
+  }
+
+  return bestDir ?? player.direction;
 }
 
 function floodFill(startX, startY, occupied, w, h, maxCells) {
