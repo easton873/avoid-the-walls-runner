@@ -141,6 +141,32 @@ export class UI {
     };
   }
 
+  // ── You died overlay ──────────────────────────────────────────────
+
+  showYouDied({ onWatch, onMenu }) {
+    const overlay = document.getElementById('you-died-overlay');
+    overlay.classList.add('active');
+
+    document.getElementById('you-died-watch-btn').onclick = () => onWatch();
+    document.getElementById('you-died-menu-btn').onclick = () => onMenu();
+  }
+
+  hideYouDied() {
+    document.getElementById('you-died-overlay').classList.remove('active');
+  }
+
+  showRejoinBtn(onClick) {
+    const btn = document.getElementById('rejoin-btn');
+    btn.classList.add('visible');
+    btn.onclick = onClick;
+  }
+
+  hideRejoinBtn() {
+    const btn = document.getElementById('rejoin-btn');
+    btn.classList.remove('visible');
+    btn.onclick = null;
+  }
+
   // ── Portrait overlay ──────────────────────────────────────────────
 
   _checkPortrait() {

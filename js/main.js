@@ -24,6 +24,7 @@ let animFrameId = null;
 let phase = 'menu'; // local phase tracker: 'menu' | 'countdown' | 'playing' | 'paused'
 let countdownValue = 3;
 let countdownTimer = null;
+let humanDiedThisRound = false;
 
 // ── Boot ───────────────────────────────────────────────────────────
 
@@ -72,7 +73,19 @@ function startGame({ gameMode, numCPU }) {
 
 // ── Countdown ──────────────────────────────────────────────────────
 
+function showYouDiedOverlay() {
+  ui.hideRejoinBtn();
+  ui.showYouDied({
+    onWatch: () => {
+      ui.hideYouDied();
+      ui.showRejoinBtn(showYouDiedOverlay);
+    },
+    onMenu: goToMenu,
+  });
+}
+
 function beginCountdown() {
+  humanDiedThisRound = false;
   countdownValue = 3;
   phase = 'countdown';
 
@@ -109,9 +122,17 @@ function gameLoop(now) {
       inputHandler.markBoostUsed();
     }
 
+    // Detect human player dying mid-round (CPUs still alive)
+    if (!humanDiedThisRound && !gameState.players[0].alive && gameState.phase === 'playing') {
+      humanDiedThisRound = true;
+      showYouDiedOverlay();
+    }
+
     if (gameState.phase === 'roundOver') {
       renderer.draw(gameState);
       phase = 'paused';
+      ui.hideYouDied();
+      ui.hideRejoinBtn();
       ui.showRoundOver(gameState, () => {
         if (gameState.phase === 'gameOver') {
           // resolveRound already set gameOver — show game over
@@ -128,6 +149,8 @@ function gameLoop(now) {
     if (gameState.phase === 'gameOver') {
       renderer.draw(gameState);
       phase = 'paused';
+      ui.hideYouDied();
+      ui.hideRejoinBtn();
       ui.showGameOver(gameState, goToMenu);
       return;
     }
@@ -141,6 +164,7 @@ function gameLoop(now) {
 
 function goToMenu() {
   phase = 'menu';
+  humanDiedThisRound = false;
   if (animFrameId) {
     cancelAnimationFrame(animFrameId);
     animFrameId = null;
@@ -153,6 +177,8 @@ function goToMenu() {
     inputHandler.destroy();
     inputHandler = null;
   }
+  ui.hideYouDied();
+  ui.hideRejoinBtn();
   gameState = null;
   ui.showMenu();
 }

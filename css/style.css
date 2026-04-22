@@ -189,6 +189,41 @@ html, body {
   font-weight: bold;
 }
 
+.overlay-btn-row {
+  display: flex;
+  gap: 12px;
+}
+
+/* ── Rejoin button (floating, top-right during spectate) ────────── */
+
+#rejoin-btn {
+  display: none;
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 25;
+  background: #00f5ff1a;
+  border: 1px solid #00f5ff;
+  color: #00f5ff;
+  font-family: inherit;
+  font-size: 0.75rem;
+  padding: 6px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  transition: background 0.15s;
+}
+
+#rejoin-btn.visible {
+  display: block;
+}
+
+#rejoin-btn:hover {
+  background: #00f5ff33;
+  box-shadow: 0 0 10px #00f5ff44;
+}
+
 /* ── Portrait warning ───────────────────────────────────────────── */
 
 #portrait-overlay {

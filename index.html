@@ -58,6 +58,19 @@
       <div id="score-table" class="score-table"></div>
       <button id="menu-btn" class="overlay-btn">Main Menu</button>
     </div>
+
+    <!-- You died overlay (shown when human dies mid-round) -->
+    <div id="you-died-overlay" class="overlay">
+      <h2 style="color: #ff4757;">You Lost</h2>
+      <p>The CPU players are still fighting it out.</p>
+      <div class="overlay-btn-row">
+        <button id="you-died-watch-btn" class="overlay-btn">Watch</button>
+        <button id="you-died-menu-btn" class="overlay-btn">Main Menu</button>
+      </div>
+    </div>
+
+    <!-- Floating rejoin button (top-right, shown after dismissing you-died overlay) -->
+    <button id="rejoin-btn">Menu</button>
   </div>
 
   <!-- Mobile controls (shown only on touch devices) -->
